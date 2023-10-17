@@ -40,7 +40,7 @@
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h4 class="modal-title">Modal title</h4>
+                <h4 class="modal-title">Add Product</h4>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <form action="" method="POST" id="storeProduct" enctype="multipart/form-data">
@@ -62,7 +62,7 @@
                     <br>
                     <label for="specifications">Specification</label>
                     <p id="viewSpecification"></p>
-                    <textarea class="form-control" id="inputDesc" name="specifications" rows="3"></textarea>
+                    <textarea class="form-control" id="inputSpec" name="specifications" rows="3"></textarea>
                     <span class="text-danger" id="errorSpecification"></span>
                 </div>
                 <div class="modal-footer">
@@ -84,21 +84,22 @@
 
     $(document).on('click', '.viewBtn', function() {
         $('#modal').modal('show');
-        let catId = $(this).data('categoryid');
+        let productId = $(this).data('productid');
         $.ajax({
-            url: "{{ url('/categories') }}/" + catId,
+            url: "{{ url('/products') }}/" + productId,
             type: 'GET',
             dataType: 'json',
             success: function(data) {
                 $('[id^="error"]').text('');
                 $('#viewName').text(data.name);
-                $('#viewDescription').text(data.description);
+                $('#viewPrice').text(data.price);
+                $('#viewSpecification').text(data.specifications);
                 $('#inputName').css('display', 'none');
                 $('#inputName').val(data.name);
-                $('#inputDesc').css('display', 'none');
-                $('#inputDesc').val(data.description);
+                $('#inputSpec').css('display', 'none');
+                $('#inputSpec').val(data.specifications);
                 $('#button').text('Update Values');
-                $('#button').attr('data-catid', catId);
+                $('#button').attr('data-productid', productId);
             }
         })
     });

@@ -167,7 +167,7 @@
                         <td>${data.description}</td>
                         <td>
                             <a href="#" class="btn btn-info viewBtn" data-categoryid="${data.id}">View</a>
-                            <a href="{{ url('categories') }}/${data.id}" class="btn btn-warning">Edit</a>
+                            <a href="{{ route('products.index', ['category_id'=>$category->id]) }}" class="btn btn-warning">View Products</a>
                                 <button type="submit" class="btn btn-danger" onclick="deleteCategory(${data.id})">Delete</button>
                         </td>`;
     }

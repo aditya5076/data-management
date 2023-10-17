@@ -70,7 +70,7 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
-        //
+        echo json_encode($product);
     }
 
     /**
