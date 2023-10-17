@@ -17,19 +17,15 @@
                 </thead>
                 <tbody>
                     @foreach($categories as $category)
-                    <tr>
+                    <tr id="row-<?php echo $category->id; ?>">
                         <td>{{ $category->id }}</td>
                         <td>{{ $category->name }}</td>
                         <td>{{ $category->description }}</td>
                         <td>
-                            <a href="#" class="btn btn-info" id="viewBtn" data-categoryid="{{  $category->id }}">View</a>
-                            <a href="{{ route('categories.edit', $category->id) }}" class="btn btn-warning">Edit</a>
+                            <a href="#" class="btn btn-info viewBtn" data-categoryid="{{  $category->id }}">View</a>
+                            <a href="{{ route('products.index', ['category_id'=>$category->id]) }}" class="btn btn-warning">View Products</a>
                             <!-- Add delete button with a confirmation dialog -->
-                            <form action="{{ route('categories.destroy', $category->id) }}" method="POST" style="display: inline;">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this category?')">Delete</button>
-                            </form>
+                            <button type="submit" class="btn btn-danger" onclick="deleteCategory(<?php echo $category->id; ?>)">Delete</button>
                         </td>
                     </tr>
                     @endforeach
@@ -38,11 +34,11 @@
         </div>
     </div>
 </div>
-<div class="modal fade" tabindex="-1" role="dialog" id="modal">
+<div class="modal fade" tabindex="-1" role="dialog" id="modal" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h4 class="modal-title">Modal title</h4>
+                <h4 class="modal-title">Add Category</h4>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <form action="{{ route('categories.store') }}" method="POST" id="storeCategory">
@@ -71,30 +67,31 @@
         $('#openModal').on('click', function() {
             $('#modal').modal('show');
         })
-
-        $('#viewBtn').on('click', function() {
-            let catId = $(this).data('categoryid');
-            $.ajax({
-                url: "{{ url('/categories') }}/" + catId,
-                type: 'GET',
-                dataType: 'json',
-                success: function(data) {
-                    $('[id^="error"]').text('');
-                    $('#viewName').text(data.name);
-                    $('#viewDescription').text(data.description);
-                    $('#inputName').css('display', 'none');
-                    $('#inputName').val(data.name);
-                    $('#inputDesc').css('display', 'none');
-                    $('#inputDesc').val(data.description);
-                    $('#modal').modal('show');
-                    $('#button').text('Update Values');
-                    $('#button').data('categoryId', data.id);
-                }
-            })
-        });
-
-
+        $('.close').on('click', function() {
+            $('#modal').modal('hide');
+        })
     })
+
+    $(document).on('click', '.viewBtn', function() {
+        $('#modal').modal('show');
+        let catId = $(this).data('categoryid');
+        $.ajax({
+            url: "{{ url('/categories') }}/" + catId,
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                $('[id^="error"]').text('');
+                $('#viewName').text(data.name);
+                $('#viewDescription').text(data.description);
+                $('#inputName').css('display', 'none');
+                $('#inputName').val(data.name);
+                $('#inputDesc').css('display', 'none');
+                $('#inputDesc').val(data.description);
+                $('#button').text('Update Values');
+                $('#button').attr('data-catid', catId);
+            }
+        })
+    });
 
     $('#modal').on('hidden.bs.modal', function() {
         $('#viewName').text('');
@@ -104,12 +101,17 @@
         $('#inputName').val('');
         $('#inputDesc').val('');
         $('#button').text('Save changes');
-        $('#button').removeData('categoryId');
+        $('#button').removeData('catid');
 
     })
 
-    $('#button').on('click', function() {
-        if ($(this).data('categoryId')) {
+    $('#button').on('click', function(e) {
+        let catId = $(this).data('catid');
+        if (catId) {
+            let isEdit = false;
+            if ($('#button').text() !== 'Update Values') {
+                isEdit = true;
+            }
             $('#viewName').text('');
             $('#viewDescription').text('');
             $('#inputName').css('display', 'block');
@@ -119,39 +121,60 @@
             // TODO : TO MAKE A SINGLE FUNCTION
             let inputVal = $('#inputName').val();
             let descVal = $('#inputDesc').val();
+
             $('[id^="error"]').text('');
             let hasError = false;
             e.preventDefault();
-            if (e.target.name.value.trim() === '') {
+            if (inputVal.trim() === '') {
                 $('#errorName').text('Name is required');
                 hasError = true;
             }
 
-            if (e.target.description.value.trim() === '') {
+            if (descVal.trim() === '') {
                 $('#errorDesc').text('Description is required');
                 hasError = true;
             }
             if (hasError) {
                 return false;
             }
-            $.ajax({
-                url: "{{ url('/categories') }}",
-                data: {
-                    id: $(this).data('categoryId'),
-                    name: inputVal,
-                    description: descVal,
-                },
-                type: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                success: function(data) {
-
-                }
-            })
+            if (isEdit) {
+                $.ajax({
+                    url: "{{ url('/categories') }}",
+                    data: {
+                        id: catId,
+                        name: inputVal,
+                        description: descVal,
+                    },
+                    type: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    dataType: 'json',
+                    success: function(data) {
+                        console.log(catId);
+                        $('#row-' + catId).html(effectedRowBody(data));
+                        $('#modal').modal('hide');
+                        Swal.fire('Category Updated');
+                    }
+                })
+            }
         }
     })
 
+    function effectedRowBody(data) {
+        return `<td>${data.id}</td>
+                        <td>${data.name}</td>
+                        <td>${data.description}</td>
+                        <td>
+                            <a href="#" class="btn btn-info viewBtn" data-categoryid="${data.id}">View</a>
+                            <a href="{{ url('categories') }}/${data.id}" class="btn btn-warning">Edit</a>
+                                <button type="submit" class="btn btn-danger" onclick="deleteCategory(${data.id})">Delete</button>
+                        </td>`;
+    }
+
+    $(document).on('click', '#openModal', function() {
+        $('#button').removeAttr('data-catid')
+    })
 
     $('#storeCategory').submit(function(e) {
         let inputVal = $('#inputName').val();
@@ -178,11 +201,19 @@
                 name: inputVal,
                 description: descVal,
             },
+            dataType: 'json',
             type: 'POST',
             headers: {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             },
             success: function(data) {
+                let effected = effectedRowBody(data);
+                let newBody = `<tr id="row-${data.id}">
+                        ${effected}
+                    </tr>`
+                $('tbody').prepend(newBody);
+                $('#modal').modal('hide');
+                Swal.fire('Category created!')
 
             },
             error: function(data) {
@@ -200,5 +231,27 @@
 
         })
     })
+
+    function deleteCategory(id) {
+        let isConfirmed = confirm('Are you sure you want to delete this category?')
+
+        if (isConfirmed) {
+            $.ajax({
+                url: "{{ url('categories') }}/" + id,
+                type: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                dataType: 'json',
+                success: function(data) {
+                    $('#row-' + id).css('visibility', 'hidden');
+                    Swal.fire(data.message);
+                }
+
+            })
+        }
+
+
+    }
 </script>
 @endsection

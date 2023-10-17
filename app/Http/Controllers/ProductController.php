@@ -12,9 +12,13 @@ class ProductController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        if ($request->has('category_id')) {
+            $products = Product::where('category_id', $request->category_id)->latest()->get();
+            $categoryId =  $request->category_id;
+            return view('product', compact('products', 'categoryId'));
+        }
     }
 
     /**
@@ -35,7 +39,27 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'name' => 'required|string',
+            'image' => 'required',
+            'price' => 'required|integer',
+            'specifications' => 'required|string'
+        ]);
+
+        if ($request->hasFile('image')) {
+            $imageName = time() . "." . $request->file('image')->extension();
+            $request->image->move(public_path('product-images/'), $imageName);
+        }
+
+        $product =  Product::create([
+            'category_id' => $request->category_id,
+            'name' => $request->name,
+            'price' => $request->price,
+            'specifications' => $request->specifications,
+            'image' => $imageName,
+        ]);
+
+        echo json_encode($product);
     }
 
     /**

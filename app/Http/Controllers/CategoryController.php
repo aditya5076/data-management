@@ -49,6 +49,7 @@ class CategoryController extends Controller
                 ]);
 
                 echo json_encode([
+                    'id' => $request->id,
                     'name' => $request->name,
                     'description' => $request->description,
                 ]);
@@ -61,10 +62,11 @@ class CategoryController extends Controller
             'description' => 'required',
         ]);
 
-        Category::create($request->all());
+        $category = Category::create($request->all());
         echo json_encode([
             'name' => $request->name,
             'description' => $request->description,
+            'id' => $category->id
         ]);
         exit();
     }
@@ -114,6 +116,10 @@ class CategoryController extends Controller
      */
     public function destroy(Category $category)
     {
-        //
+        $categoryName = $category->name;
+        $category->delete();
+        echo json_encode([
+            'message' => "Category deleted of name - " . $categoryName,
+        ]);
     }
 }
